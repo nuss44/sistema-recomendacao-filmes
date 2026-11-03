@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 
+from . import catalog
 from .config import FINAL_CONFIG, HybridConfig
 from .data import Index
 from .evaluation import top_k
@@ -110,6 +111,33 @@ class HybridRecommender:
         result = self.movies.iloc[order][["MovieID", "Title", "Genres"]].copy()
         result["Score"] = similarity[order]
         return result.reset_index(drop=True)
+
+    # ------------------------------------------------------------------
+    # Catálogo e histórico
+    # ------------------------------------------------------------------
+    def search_movies(self, query: str = "", limit: int = 20) -> pd.DataFrame:
+        """Busca por título (sem acento, sem diferenciar maiúsculas), os mais populares primeiro."""
+        result = catalog.search(self.movies, query, self.popularity, limit)
+        return result[["MovieID", "Title", "Genres"]].reset_index(drop=True)
+
+    def movie(self, movie_id: int) -> pd.Series:
+        """Ficha de um filme (MovieID, Title, Genres)."""
+        return self.movies.iloc[self._item_position(movie_id)][["MovieID", "Title", "Genres"]]
+
+    def user_history(self, user_id: int) -> pd.DataFrame:
+        """Filmes que o usuário avaliou no treino, das maiores notas para as menores."""
+        if user_id not in self.index.user_pos.index:
+            raise KeyError(f"UserID {user_id} não encontrado.")
+        row = self.R[self.index.user_pos[user_id]]
+        history = self.movies.iloc[row.indices][["MovieID", "Title", "Genres"]].copy()
+        history["Rating"] = row.data.astype(int)
+        history["_popularity"] = self.popularity[row.indices]
+        history = history.sort_values(["Rating", "_popularity"], ascending=False, kind="stable")
+        return history.drop(columns="_popularity").reset_index(drop=True)
+
+    @property
+    def user_ids(self) -> np.ndarray:
+        return self.index.user_ids
 
     # ------------------------------------------------------------------
     # Internos

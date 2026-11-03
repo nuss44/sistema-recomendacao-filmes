@@ -1,0 +1,10 @@
+# Mesma paleta dos gráficos em reports/figures
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f6f7f9"
+secondaryBackgroundColor = "#e8ebf0"
+textColor = "#22252b"
+
+[browser]
+gatherUsageStats = false

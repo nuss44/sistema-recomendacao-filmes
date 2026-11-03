@@ -5,6 +5,7 @@ Todos os valores vêm do notebook `notebooks/01_modelagem_e_avaliacao.ipynb`.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data" / "processed"
 MODELS_DIR = ROOT / "models"
 REPORTS_DIR = ROOT / "reports"
-MODEL_PATH = MODELS_DIR / "recommender.joblib"
+# A API e o app leem o modelo daqui; a variável de ambiente permite apontar outro arquivo (ex.: no Docker).
+MODEL_PATH = Path(os.environ.get("RECOMMENDER_MODEL_PATH", MODELS_DIR / "recommender.joblib"))
 
 RANDOM_STATE = 42
 

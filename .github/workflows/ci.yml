@@ -1,7 +1,7 @@
 # Integração contínua: roda a cada push e pull request.
 #
 # - lint:  estilo e erros comuns (ruff)
-# - tests: suíte completa em Linux e Windows, Python 3.10 e 3.12, com o Surprise
+# - tests: suíte completa em Linux e Windows, Python 3.10 e 3.12 (pacote, API, app e Surprise)
 #
 # Os testes com o MovieLens real (tests/test_real_data.py) são pulados aqui: a licença
 # do dataset não permite redistribuí-lo. Já tests/test_metrics_report.py roda, pois só
@@ -51,9 +51,9 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: pyproject.toml
-      - name: Instalar o pacote com as dependências de teste e o Surprise
+      - name: Instalar o pacote com API, app, Surprise e dependências de teste
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,surprise]"
+          python -m pip install -e ".[dev,surprise,api,app]"
       - name: Rodar os testes
         run: python -m pytest -v -rs --cov --cov-report=term-missing
