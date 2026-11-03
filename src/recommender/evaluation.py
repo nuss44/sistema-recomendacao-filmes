@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import spmatrix
 
-from .config import K, RANDOM_STATE, RELEVANCE_THRESHOLD
+from .config import RANDOM_STATE, RELEVANCE_THRESHOLD, K
 from .data import Index
 
 

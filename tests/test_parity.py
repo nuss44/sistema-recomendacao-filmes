@@ -7,9 +7,8 @@ import pandas as pd
 import pytest
 from conftest import NOTEBOOK_CONFIG
 
-from recommender import FINAL_CONFIG
+from recommender import FINAL_CONFIG, models
 from recommender import evaluation as ev
-from recommender import models
 
 
 def test_split_is_identical(split, notebook):

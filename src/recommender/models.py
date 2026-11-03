@@ -65,7 +65,8 @@ def surprise_scores(df: pd.DataFrame, params: dict, index: Index) -> np.ndarray:
             'a comparação com o Surprise: pip install ".[experiments]"'
         ) from error
 
-    trainset = Dataset.load_from_df(df[["UserID", "MovieID", "Rating"]], Reader(rating_scale=(1, 5))).build_full_trainset()
+    reader = Reader(rating_scale=(1, 5))
+    trainset = Dataset.load_from_df(df[["UserID", "MovieID", "Rating"]], reader).build_full_trainset()
     model = SVD(**params, random_state=RANDOM_STATE)
     model.fit(trainset)
     # Matriz montada direto dos fatores: média + viés usuário + viés filme + p_u · q_i
@@ -118,7 +119,7 @@ def content_scores(R: spmatrix, item_features: np.ndarray, weighted: bool) -> np
     similaridade 3.883 x 3.883 (~120 MB).
     """
     weights = content_weights(R, weighted)
-    profile = np.asarray((weights @ item_features))  # usuários x gêneros
+    profile = np.asarray(weights @ item_features)  # usuários x gêneros
     return np.asarray(profile @ item_features.T, dtype=np.float32)
 
 

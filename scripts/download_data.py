@@ -3,6 +3,7 @@
 Uso (a partir da raiz do projeto):
     python scripts/download_data.py           # baixa só se ainda não existir
     python scripts/download_data.py --force   # baixa e converte de novo
+    python scripts/download_data.py --data-dir outra/pasta
 
 Saída: data/processed/{movies,users,ratings}.csv, com os mesmos nomes de
 coluna usados no notebook de experimentos.
@@ -22,8 +23,6 @@ import pandas as pd
 URL = "https://files.grouplens.org/datasets/movielens/ml-1m.zip"
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
-PROCESSED_DIR = ROOT / "data" / "processed"
 
 # Arquivos .dat do MovieLens: separador "::", sem cabeçalho, codificação latin-1.
 # Zip-code é texto (ex.: "02460", "98107-2117"); ler como número perderia zeros à esquerda.
@@ -41,6 +40,14 @@ SCHEMAS: dict[str, dict] = {
 
 # Contagens oficiais do MovieLens 1M (README do GroupLens).
 EXPECTED_ROWS = {"movies": 3_883, "users": 6_040, "ratings": 1_000_209}
+
+
+def show(path: Path) -> str:
+    """Caminho curto para mensagens: relativo ao projeto quando possível."""
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def fmt(n: int) -> str:
@@ -65,7 +72,7 @@ def ssl_context() -> ssl.SSLContext:
 def download(url: str, destination: Path, force: bool = False) -> Path:
     """Baixa `url` para `destination`, a menos que o arquivo já exista."""
     if destination.exists() and not force:
-        print(f"[ok] {destination.relative_to(ROOT)} já existe, download ignorado")
+        print(f"[ok] {show(destination)} já existe, download ignorado")
         return destination
 
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -76,7 +83,7 @@ def download(url: str, destination: Path, force: bool = False) -> Path:
             file.write(chunk)
     # Só renomeia no fim: um download interrompido nunca deixa um zip "válido" pela metade.
     temporary.replace(destination)
-    print(f"[ok] Salvo em {destination.relative_to(ROOT)}")
+    print(f"[ok] Salvo em {show(destination)}")
     return destination
 
 
@@ -138,39 +145,43 @@ def save(tables: dict[str, pd.DataFrame], destination: Path) -> None:
     for name, table in tables.items():
         path = destination / f"{name}.csv"
         table.to_csv(path, index=False, encoding="utf-8")
-        print(f"[ok] {path.relative_to(ROOT)}: {fmt(len(table))} linhas")
+        print(f"[ok] {show(path)}: {fmt(len(table))} linhas")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--force", action="store_true", help="baixa e converte mesmo que os arquivos já existam")
     parser.add_argument("--url", default=URL, help="endereço alternativo do ml-1m.zip (ex.: um espelho)")
+    parser.add_argument(
+        "--data-dir", type=Path, default=ROOT / "data", help="pasta base (raw/ e processed/ ficam dentro)"
+    )
     args = parser.parse_args(argv)
+    raw_dir, processed_dir = args.data_dir / "raw", args.data_dir / "processed"
 
-    targets = [PROCESSED_DIR / f"{name}.csv" for name in SCHEMAS]
+    targets = [processed_dir / f"{name}.csv" for name in SCHEMAS]
     if all(path.exists() for path in targets) and not args.force:
-        print("[ok] CSVs já existem em data/processed. Use --force para refazer.")
+        print(f"[ok] CSVs já existem em {show(processed_dir)}. Use --force para refazer.")
         return 0
 
     try:
-        zip_path = download(args.url, RAW_DIR / "ml-1m.zip", force=args.force)
+        zip_path = download(args.url, raw_dir / "ml-1m.zip", force=args.force)
     except OSError as error:
         print(f"[erro] Falha no download: {error}", file=sys.stderr)
         if "CERTIFICATE_VERIFY_FAILED" in str(error):
             print("       Instale os certificados e tente de novo: python -m pip install certifi", file=sys.stderr)
-        print(f"       Baixe manualmente {URL} e salve em data/raw/ml-1m.zip", file=sys.stderr)
+        print(f"       Baixe manualmente {URL} e salve em {show(raw_dir / 'ml-1m.zip')}", file=sys.stderr)
         return 1
 
-    tables = convert(extract(zip_path, RAW_DIR))
+    tables = convert(extract(zip_path, raw_dir))
 
-    problems = validate(tables)
+    problems = validate(tables, EXPECTED_ROWS)
     if problems:
         print("[erro] Os dados não conferem com o MovieLens 1M oficial:", file=sys.stderr)
         for problem in problems:
             print(f"       - {problem}", file=sys.stderr)
         return 1
 
-    save(tables, PROCESSED_DIR)
+    save(tables, processed_dir)
     print("[ok] Dados prontos e validados.")
     return 0
 

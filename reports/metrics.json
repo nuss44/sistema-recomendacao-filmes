@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-11-03T02:05:44+00:00",
+  "generated_at": "2026-11-03T02:22:18+00:00",
   "environment": {
     "python": "3.10.0",
     "platform": "Windows-10-10.0.19045-SP0",
-    "recommender": "0.3.0",
+    "recommender": "0.4.0",
     "numpy": "2.2.6",
     "pandas": "2.3.3",
     "scipy": "1.15.3",
     "scikit-learn": "1.7.2",
-    "scikit-surprise": null
+    "scikit-surprise": "1.1.5"
   },
   "data": {
     "ratings": 1000209,
@@ -36,8 +36,13 @@
     "matches_final_config": true,
     "ndcg_validation_hybrid": 0.10725177760775916,
     "ndcg_validation_svd": 0.10272675120645107,
-    "surprise_params": null,
-    "surprise_params_source": null
+    "surprise_params": {
+      "n_factors": 150,
+      "lr_all": 0.01,
+      "reg_all": 0.1,
+      "n_epochs": 70
+    },
+    "surprise_params_source": "busca do notebook (RMSE na validação); refaça com --tune-surprise"
   },
   "test": [
     {
@@ -69,6 +74,13 @@
       "Cobertura": 0.4568632500643832
     },
     {
+      "Modelo": "SVD Surprise (nota prevista)",
+      "Precision@10": 0.024337914850821325,
+      "Recall@10": 0.016788651528931612,
+      "NDCG@10": 0.025201400482091216,
+      "Cobertura": 0.08601596703579706
+    },
+    {
       "Modelo": "Conteúdo (ponderado por nota)",
       "Precision@10": 0.012185719074756953,
       "Recall@10": 0.009430156723081406,
@@ -88,13 +100,6 @@
       "Recall@10": 0.002845471101464886,
       "NDCG@10": 0.005425600516270103,
       "Cobertura": 1.0
-    },
-    {
-      "Modelo": "SVD Surprise (nota prevista)",
-      "Precision@10": null,
-      "Recall@10": null,
-      "NDCG@10": null,
-      "Cobertura": null
     }
   ],
   "validation": [

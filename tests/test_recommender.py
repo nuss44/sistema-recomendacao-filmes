@@ -9,7 +9,7 @@ from recommender import HybridConfig, HybridRecommender
 def ratings_of(rec, user_id):
     """Notas do usuário no formato {MovieID: nota}."""
     row = rec.R[rec.index.user_pos[user_id]]
-    return {int(rec.index.item_ids[j]): float(v) for j, v in zip(row.indices, row.data)}
+    return {int(rec.index.item_ids[j]): float(v) for j, v in zip(row.indices, row.data, strict=True)}
 
 
 def test_new_user_with_same_ratings_gets_same_list(recommender_dev, index):
@@ -41,9 +41,9 @@ def test_new_user_with_equal_ratings_still_gets_recommendations(recommender_dev,
 def test_new_user_input_is_validated(recommender_dev, movies):
     known = int(movies["MovieID"].iloc[0])
     with pytest.raises(ValueError):
-        recommender_dev.recommend_for_ratings({})            # nenhum filme
+        recommender_dev.recommend_for_ratings({})  # nenhum filme
     with pytest.raises(KeyError):
-        recommender_dev.recommend_for_ratings({-1: 5})       # filme inexistente
+        recommender_dev.recommend_for_ratings({-1: 5})  # filme inexistente
     for invalid in (0, 6, 4.5 + 2):
         with pytest.raises(ValueError):
             recommender_dev.recommend_for_ratings({known: invalid})  # nota fora de 1–5
@@ -69,7 +69,7 @@ def test_similar_movies(recommender_dev, movies):
     assert movie_id not in set(result["MovieID"])
     assert result["Score"].is_monotonic_decreasing
     # Entre filmes com a mesma similaridade, os mais populares vêm primeiro
-    popularity = dict(zip(recommender_dev.index.item_ids, recommender_dev.popularity))
+    popularity = dict(zip(recommender_dev.index.item_ids, recommender_dev.popularity, strict=True))
     for _, tied in result.groupby("Score", sort=False):
         counts = [popularity[m] for m in tied["MovieID"]]
         assert counts == sorted(counts, reverse=True)
@@ -92,3 +92,12 @@ def test_save_and_load(recommender_dev, index, tmp_path):
 def test_invalid_config_is_rejected(kwargs):
     with pytest.raises(ValueError):
         HybridConfig(**kwargs)
+
+
+def test_load_rejects_other_objects(tmp_path):
+    import joblib
+
+    path = tmp_path / "other.joblib"
+    joblib.dump({"not": "a model"}, path)
+    with pytest.raises(TypeError):
+        HybridRecommender.load(path)

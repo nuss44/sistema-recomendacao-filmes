@@ -4,11 +4,11 @@ teste do notebook: mesmas tabelas, mesmas escolhas, mesma tabela final."""
 import json
 from dataclasses import asdict
 
+import notebook_reference
 import numpy as np
 import pandas as pd
 import pytest
 
-import notebook_reference
 from recommender import evaluation as ev
 from recommender import reports
 from recommender.experiment import evaluate_on_test, select_on_validation
@@ -30,11 +30,11 @@ def protocol(movies, ratings, split, index, item_features):
     if not HAS_SURPRISE:
         # Sem o Surprise, a linha dele não é comparada; um placeholder deixa a célula rodar.
         namespace["score_surprise"] = lambda df, params: np.zeros(
-            (namespace["n_users"], namespace["n_items"]), np.float32)
+            (namespace["n_users"], namespace["n_items"]), np.float32
+        )
     namespace = notebook_reference.run_protocol(namespace, surprise_params=SMALL_SURPRISE)
     selection = select_on_validation(split, index, item_features)
-    test = evaluate_on_test(split, index, item_features, selection.config,
-                            SMALL_SURPRISE if HAS_SURPRISE else None)
+    test = evaluate_on_test(split, index, item_features, selection.config, SMALL_SURPRISE if HAS_SURPRISE else None)
     return namespace, selection, test
 
 
@@ -105,3 +105,21 @@ def test_figures_are_written(protocol, tmp_path):
     ]
     for path in paths:
         assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_surprise_grid_search_matches_notebook(split, notebook):
+    """Busca do Surprise (célula de tuning do notebook) com uma grade pequena."""
+    pytest.importorskip("surprise")
+    from recommender.experiment import tune_surprise
+
+    grid = {"n_factors": [5, 10], "lr_all": [0.005], "reg_all": [0.02, 0.1], "n_epochs": [3]}
+    best, table = tune_surprise(split, grid, n_jobs=1)
+
+    namespace = dict(notebook)
+    code = notebook_reference.PROTOCOL_CELLS["tuning do Surprise"]
+    code = code.replace(code[code.index("param_grid = {") : code.index("combinacoes =")], f"param_grid = {grid!r}\n")
+    exec(code.replace("Parallel(n_jobs=-1)", "Parallel(n_jobs=1)"), namespace)
+
+    assert best == namespace["melhores_params"]
+    pd.testing.assert_frame_equal(table, namespace["busca_surprise"])
+    assert len(table) == 4

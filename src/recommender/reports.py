@@ -78,15 +78,17 @@ def markdown_table(table: pd.DataFrame, k: int = K) -> str:
 
 
 def write_markdown(validation: pd.DataFrame, test: pd.DataFrame, summary: list[str], path: Path) -> Path:
-    text = "\n\n".join([
-        "# Métricas",
-        "> Arquivo gerado por `python scripts/evaluate.py`. Não edite à mão.",
-        "\n".join(summary),
-        "## Teste (avaliação única, modelos re-treinados em treino + validação)",
-        markdown_table(test),
-        "## Validação (usada para as escolhas)",
-        markdown_table(validation),
-    ])
+    text = "\n\n".join(
+        [
+            "# Métricas",
+            "> Arquivo gerado por `python scripts/evaluate.py`. Não edite à mão.",
+            "\n".join(summary),
+            "## Teste (avaliação única, modelos re-treinados em treino + validação)",
+            markdown_table(test),
+            "## Validação (usada para as escolhas)",
+            markdown_table(validation),
+        ]
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text + "\n", encoding="utf-8")
     return path
@@ -119,14 +121,30 @@ def plot_alpha_search(hybrid_search: pd.DataFrame, validation: pd.DataFrame, pat
         # O melhor α vai na própria legenda: não disputa espaço com as curvas.
         label = f"{names[weighted]} · melhor α = {best['alpha']:.1f} (NDCG {best[f'NDCG@{k}']:.3f})"
         ax.plot(d["alpha"], d[f"NDCG@{k}"], color=color, linewidth=2, marker="o", markersize=5, label=label)
-        ax.plot(best["alpha"], best[f"NDCG@{k}"], "o", markersize=12,
-                markerfacecolor="none", markeredgecolor=color, markeredgewidth=2)
+        ax.plot(
+            best["alpha"],
+            best[f"NDCG@{k}"],
+            "o",
+            markersize=12,
+            markerfacecolor="none",
+            markeredgecolor=color,
+            markeredgewidth=2,
+        )
     popularity = validation.loc[validation["Modelo"] == "Popularidade", f"NDCG@{k}"].item()
     ax.axhline(popularity, color=TEXT, linestyle="--", linewidth=1)
-    ax.annotate("baseline popularidade", xy=(0, popularity), xytext=(4, -4), textcoords="offset points",
-                ha="left", va="top", fontsize=9, color=TEXT)
-    ax.set_title(f"Validação: NDCG@{k} do híbrido conforme o peso α do colaborativo",
-                 loc="left", fontsize=11, color=TEXT, pad=12)
+    ax.annotate(
+        "baseline popularidade",
+        xy=(0, popularity),
+        xytext=(4, -4),
+        textcoords="offset points",
+        ha="left",
+        va="top",
+        fontsize=9,
+        color=TEXT,
+    )
+    ax.set_title(
+        f"Validação: NDCG@{k} do híbrido conforme o peso α do colaborativo", loc="left", fontsize=11, color=TEXT, pad=12
+    )
     ax.set_xlabel("α  (0 = só conteúdo · 1 = só colaborativo)", color=TEXT)
     ax.set_ylabel(f"NDCG@{k}", color=TEXT)
     ax.set_ylim(bottom=0)
@@ -151,8 +169,14 @@ def plot_test_ndcg(test: pd.DataFrame, path: Path, k: int = K) -> Path:
     bars = ax.barh(data["Modelo"], data[f"NDCG@{k}"], color=colors, height=0.6)
     ax.axvline(test.loc[test["Modelo"] == "Popularidade", f"NDCG@{k}"].item(), color=TEXT, linestyle="--", linewidth=1)
     for bar in bars:
-        ax.text(bar.get_width() + 0.002, bar.get_y() + bar.get_height() / 2,
-                f"{bar.get_width():.3f}", va="center", fontsize=9, color=TEXT)
+        ax.text(
+            bar.get_width() + 0.002,
+            bar.get_y() + bar.get_height() / 2,
+            f"{bar.get_width():.3f}",
+            va="center",
+            fontsize=9,
+            color=TEXT,
+        )
     title = f"Teste: NDCG@{k} por modelo (cinza = baseline; tracejado = popularidade)"
     if skipped:
         title += f"\nNão executado: {', '.join(skipped)}"

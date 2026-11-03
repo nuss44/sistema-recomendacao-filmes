@@ -5,13 +5,12 @@ integração contínua). Para rodar: `python scripts/download_data.py` e depois
 `pytest tests/test_real_data.py`.
 """
 
+import notebook_reference
 import numpy as np
 import pytest
 
-import notebook_reference
-from recommender import FINAL_CONFIG, HybridConfig, HybridRecommender, Index, load_movielens, temporal_split
+from recommender import FINAL_CONFIG, HybridConfig, HybridRecommender, Index, load_movielens, models, temporal_split
 from recommender import evaluation as ev
-from recommender import models
 from recommender.config import DATA_DIR, REPORTS_DIR
 from recommender.experiment import evaluate_on_test
 

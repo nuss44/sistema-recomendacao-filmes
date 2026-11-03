@@ -6,9 +6,24 @@ import numpy as np
 import pandas as pd
 
 GENRES = [
-    "Action", "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary",
-    "Drama", "Fantasy", "Film-Noir", "Horror", "Musical", "Mystery", "Romance",
-    "Sci-Fi", "Thriller", "War", "Western",
+    "Action",
+    "Adventure",
+    "Animation",
+    "Children's",
+    "Comedy",
+    "Crime",
+    "Documentary",
+    "Drama",
+    "Fantasy",
+    "Film-Noir",
+    "Horror",
+    "Musical",
+    "Mystery",
+    "Romance",
+    "Sci-Fi",
+    "Thriller",
+    "War",
+    "Western",
 ]
 
 
@@ -30,11 +45,13 @@ def make_movielens(n_users: int = 300, n_movies: int = 250, mean_ratings: int = 
     for _ in range(n_movies):
         k = rng.integers(1, 4)
         genre_sets.append("|".join(sorted(rng.choice(GENRES[:10], size=k, replace=False))))
-    movies = pd.DataFrame({
-        "MovieID": movie_ids,
-        "Title": [f"Filme {m} ({1950 + m % 50})" for m in movie_ids],
-        "Genres": genre_sets,
-    })
+    movies = pd.DataFrame(
+        {
+            "MovieID": movie_ids,
+            "Title": [f"Filme {m} ({1950 + m % 50})" for m in movie_ids],
+            "Genres": genre_sets,
+        }
+    )
 
     # Os últimos 5% dos filmes nunca são avaliados
     rated_movies = movie_ids[: int(n_movies * 0.95)]
@@ -53,7 +70,7 @@ def make_movielens(n_users: int = 300, n_movies: int = 250, mean_ratings: int = 
         start = rng.integers(956_700_000, 1_040_000_000)
         timestamps = start + np.sort(rng.integers(0, 3_000_000, size=n))
         timestamps[rng.random(n) < 0.3] = start  # vários empates no mesmo instante
-        for j, r, t in zip(chosen, stars, timestamps):
+        for j, r, t in zip(chosen, stars, timestamps, strict=True):
             rows.append((u + 1, int(rated_movies[j]), int(r), int(t)))
 
     ratings = pd.DataFrame(rows, columns=["UserID", "MovieID", "Rating", "Timestamp"])

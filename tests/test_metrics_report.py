@@ -66,14 +66,17 @@ def assert_table_matches(rows: list[dict], expected: dict) -> None:
         if name in TIE_DEPENDENT:
             assert all(0 <= row[column] <= 1 for column in COLUMNS), name
             continue
-        for column, value in zip(COLUMNS, values):
+        for column, value in zip(COLUMNS, values, strict=True):
             assert row[column] == pytest.approx(value, abs=1e-4), f"{name} · {column}"
 
 
 def test_report_uses_full_movielens(metrics):
     assert metrics["data"]["ratings"] == 1_000_209
     assert (metrics["protocol"]["train"], metrics["protocol"]["validation"], metrics["protocol"]["test"]) == (
-        640_166, 160_027, 200_016)
+        640_166,
+        160_027,
+        200_016,
+    )
 
 
 def test_selection_matches_notebook_and_final_config(metrics):

@@ -54,10 +54,10 @@ def split_last(df: pd.DataFrame, frac: float) -> tuple[pd.DataFrame, pd.DataFram
 
 @dataclass(frozen=True)
 class Split:
-    train: pd.DataFrame       # ajuste durante a seleção de modelos
+    train: pd.DataFrame  # ajuste durante a seleção de modelos
     validation: pd.DataFrame  # escolha de hiperparâmetros
-    test: pd.DataFrame        # avaliação final, usada uma única vez
-    dev: pd.DataFrame         # treino + validação: re-treino antes do teste
+    test: pd.DataFrame  # avaliação final, usada uma única vez
+    dev: pd.DataFrame  # treino + validação: re-treino antes do teste
 
 
 def temporal_split(ratings: pd.DataFrame, test_frac: float = TEST_FRAC, val_frac: float = VAL_FRAC) -> Split:
@@ -85,7 +85,7 @@ class Index:
         self.item_pos = pd.Series(np.arange(len(self.item_ids)), index=self.item_ids)
 
     @classmethod
-    def from_data(cls, ratings: pd.DataFrame, movies: pd.DataFrame) -> "Index":
+    def from_data(cls, ratings: pd.DataFrame, movies: pd.DataFrame) -> Index:
         return cls(np.sort(ratings["UserID"].unique()), movies["MovieID"].to_numpy())
 
     @property

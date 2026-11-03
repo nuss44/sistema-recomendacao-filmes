@@ -18,7 +18,7 @@ RANDOM_STATE = 42
 
 # Split cronológico por usuário (notebook, seção "Separação em Treino, Validação e Teste")
 TEST_FRAC = 0.2  # 20% mais recentes de cada usuário -> teste
-VAL_FRAC = 0.2   # 20% mais recentes do que sobrou -> validação
+VAL_FRAC = 0.2  # 20% mais recentes do que sobrou -> validação
 
 # Avaliação top-N
 K = 10

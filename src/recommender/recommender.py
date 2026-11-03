@@ -52,7 +52,7 @@ class HybridRecommender:
     # Treino e persistência
     # ------------------------------------------------------------------
     @classmethod
-    def fit(cls, ratings: pd.DataFrame, movies: pd.DataFrame, config: HybridConfig = FINAL_CONFIG) -> "HybridRecommender":
+    def fit(cls, ratings: pd.DataFrame, movies: pd.DataFrame, config: HybridConfig = FINAL_CONFIG) -> HybridRecommender:
         """Ajusta o recomendador nas avaliações de `ratings`. Notebook: `criar_recomendador`."""
         movies = movies[["MovieID", "Title", "Genres"]].copy()
         movies["Genres"] = movies["Genres"].fillna("")
@@ -68,7 +68,7 @@ class HybridRecommender:
         return path
 
     @staticmethod
-    def load(path: Path | str) -> "HybridRecommender":
+    def load(path: Path | str) -> HybridRecommender:
         model = joblib.load(path)
         if not isinstance(model, HybridRecommender):
             raise TypeError(f"{path} não contém um HybridRecommender.")

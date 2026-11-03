@@ -41,12 +41,12 @@ NOTEBOOK_SURPRISE_PARAMS = {"n_factors": 150, "lr_all": 0.01, "reg_all": 0.1, "n
 class Selection:
     """Tudo o que foi decidido na validação."""
 
-    validation: pd.DataFrame     # modelos individuais na validação
+    validation: pd.DataFrame  # modelos individuais na validação
     hybrid_search: pd.DataFrame  # todas as combinações do híbrido testadas
-    n_components: int            # componentes do SVD escolhidos pelo NDCG
-    config: HybridConfig         # configuração final do híbrido
-    ndcg_hybrid: float           # NDCG do híbrido escolhido, na validação
-    ndcg_svd: float              # NDCG do melhor SVD sozinho, na validação
+    n_components: int  # componentes do SVD escolhidos pelo NDCG
+    config: HybridConfig  # configuração final do híbrido
+    ndcg_hybrid: float  # NDCG do híbrido escolhido, na validação
+    ndcg_svd: float  # NDCG do melhor SVD sozinho, na validação
 
 
 def _ndcg(k: int) -> str:
@@ -84,12 +84,26 @@ def select_on_validation(split: Split, index: Index, item_features: np.ndarray, 
     for weighted, name in CONTENT_NAMES.items():
         for alpha in ALPHAS:
             scores = models.combine(best_svd, content[weighted], R, seen, alpha=alpha)
-            search.append({**evaluate(scores, name, seen, relevant, k),
-                           "tipo": "fixo", "alpha": alpha, "c": None, "ponderado": weighted})
+            search.append(
+                {
+                    **evaluate(scores, name, seen, relevant, k),
+                    "tipo": "fixo",
+                    "alpha": alpha,
+                    "c": None,
+                    "ponderado": weighted,
+                }
+            )
         for c in ADAPTIVE_CS:
             scores = models.combine(best_svd, content[weighted], R, seen, c=c)
-            search.append({**evaluate(scores, name, seen, relevant, k),
-                           "tipo": "adaptativo", "alpha": None, "c": c, "ponderado": weighted})
+            search.append(
+                {
+                    **evaluate(scores, name, seen, relevant, k),
+                    "tipo": "adaptativo",
+                    "alpha": None,
+                    "c": c,
+                    "ponderado": weighted,
+                }
+            )
     hybrid_search = pd.DataFrame(search)
 
     best = hybrid_search.loc[hybrid_search[_ndcg(k)].idxmax()]
@@ -110,9 +124,10 @@ def tune_surprise(split: Split, grid: dict = SURPRISE_GRID, n_jobs: int = -1) ->
     from joblib import Parallel, delayed
     from surprise import SVD, Dataset, Reader, accuracy
 
-    trainset = Dataset.load_from_df(split.train[["UserID", "MovieID", "Rating"]], Reader(rating_scale=(1, 5))).build_full_trainset()
-    validation = list(split.validation[["UserID", "MovieID", "Rating"]].itertuples(index=False, name=None))
-    combinations = [dict(zip(grid, values)) for values in product(*grid.values())]
+    columns = ["UserID", "MovieID", "Rating"]
+    trainset = Dataset.load_from_df(split.train[columns], Reader(rating_scale=(1, 5))).build_full_trainset()
+    validation = list(split.validation[columns].itertuples(index=False, name=None))
+    combinations = [dict(zip(grid, values, strict=True)) for values in product(*grid.values())]
 
     def rmse(params):
         model = SVD(**params, random_state=RANDOM_STATE)
@@ -120,10 +135,16 @@ def tune_surprise(split: Split, grid: dict = SURPRISE_GRID, n_jobs: int = -1) ->
         return accuracy.rmse(model.test(validation), verbose=False)
 
     rmses = Parallel(n_jobs=n_jobs)(delayed(rmse)(p) for p in combinations)
-    table = (pd.DataFrame(combinations).assign(**{"RMSE validação": rmses})
-             .sort_values("RMSE validação").reset_index(drop=True))
-    best = {key: (int(value) if key in ("n_factors", "n_epochs") else float(value))
-            for key, value in table.iloc[0].drop("RMSE validação").items()}
+    table = (
+        pd.DataFrame(combinations)
+        .assign(**{"RMSE validação": rmses})
+        .sort_values("RMSE validação")
+        .reset_index(drop=True)
+    )
+    best = {
+        key: (int(value) if key in ("n_factors", "n_epochs") else float(value))
+        for key, value in table.iloc[0].drop("RMSE validação").items()
+    }
     return best, table
 
 

@@ -2,7 +2,7 @@
 
 > Arquivo gerado por `python scripts/evaluate.py`. Não edite à mão.
 
-- Configuração escolhida na validação: SVD com 20 componentes, conteúdo ponderado por nota, α = 0.7
+- Configuração escolhida na validação: SVD com 20 componentes, conteúdo ponderado por nota, α = 0,7
 - Híbrido final no teste: NDCG@10 = 0,1213, cobertura = 21,9% (popularidade: 0,0907, 3,0%)
 - Dados: 1.000.209 avaliações, impressão digital `fc8abd2acf4ff373`
 
@@ -14,10 +14,10 @@
 | Híbrido final (config. da validação) | 0,0997 | 0,0844 | 0,1213 | 0,2189 |
 | Popularidade | 0,0799 | 0,0473 | 0,0907 | 0,0301 |
 | Híbrido inicial (α=0.5, sem normalizar) | 0,0381 | 0,0400 | 0,0520 | 0,4569 |
+| SVD Surprise (nota prevista) | 0,0243 | 0,0168 | 0,0252 | 0,0860 |
 | Conteúdo (ponderado por nota) | 0,0122 | 0,0094 | 0,0143 | 0,9825 |
 | Conteúdo (original) | 0,0106 | 0,0106 | 0,0128 | 0,8514 |
 | Aleatório | 0,0050 | 0,0028 | 0,0054 | 1,0000 |
-| SVD Surprise (nota prevista) | não executado | não executado | não executado | não executado |
 
 ## Validação (usada para as escolhas)
 
