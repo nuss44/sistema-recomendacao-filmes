@@ -11,6 +11,7 @@ coluna usados no notebook de experimentos.
 from __future__ import annotations
 
 import argparse
+import ssl
 import sys
 import urllib.request
 import zipfile
@@ -47,6 +48,20 @@ def fmt(n: int) -> str:
     return f"{n:,}".replace(",", ".")
 
 
+def ssl_context() -> ssl.SSLContext:
+    """Contexto HTTPS com os certificados do pacote certifi, quando instalado.
+
+    No Windows, o Python nem sempre encontra os certificados raiz do sistema e o
+    download falha com CERTIFICATE_VERIFY_FAILED. O certifi traz o próprio
+    conjunto de certificados e resolve isso sem desligar a verificação.
+    """
+    try:
+        import certifi
+    except ImportError:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 def download(url: str, destination: Path, force: bool = False) -> Path:
     """Baixa `url` para `destination`, a menos que o arquivo já exista."""
     if destination.exists() and not force:
@@ -56,7 +71,7 @@ def download(url: str, destination: Path, force: bool = False) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".part")
     print(f"[..] Baixando {url}")
-    with urllib.request.urlopen(url, timeout=60) as response, open(temporary, "wb") as file:
+    with urllib.request.urlopen(url, timeout=60, context=ssl_context()) as response, open(temporary, "wb") as file:
         while chunk := response.read(1 << 20):
             file.write(chunk)
     # Só renomeia no fim: um download interrompido nunca deixa um zip "válido" pela metade.
@@ -141,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
         zip_path = download(args.url, RAW_DIR / "ml-1m.zip", force=args.force)
     except OSError as error:
         print(f"[erro] Falha no download: {error}", file=sys.stderr)
+        if "CERTIFICATE_VERIFY_FAILED" in str(error):
+            print("       Instale os certificados e tente de novo: python -m pip install certifi", file=sys.stderr)
         print(f"       Baixe manualmente {URL} e salve em data/raw/ml-1m.zip", file=sys.stderr)
         return 1
 
