@@ -1,0 +1,10 @@
+# Quebras de linha LF no repositório e na cópia de trabalho, em qualquer sistema.
+# Evita os avisos "LF will be replaced by CRLF" no Windows e garante que scripts
+# copiados para o Docker (Linux) funcionem.
+* text=auto eol=lf
+
+# Arquivos binários: nunca converter
+*.png binary
+*.jpg binary
+*.zip binary
+*.joblib binary

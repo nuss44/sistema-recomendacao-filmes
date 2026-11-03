@@ -19,6 +19,7 @@ from typing import Annotated
 
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, field_validator
 
 from . import __version__, catalog
@@ -108,6 +109,10 @@ def create_app(model_path: Path | str | None = None) -> FastAPI:
 
     Model = Annotated[HybridRecommender, Depends(model)]
     N = Annotated[int, Query(ge=1, le=50, description="Tamanho da lista")]
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        return RedirectResponse("/docs")
 
     @app.get("/health", response_model=Health, tags=["status"])
     def health(request: Request) -> Health:

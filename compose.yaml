@@ -1,0 +1,35 @@
+# App e API a partir da mesma imagem.
+#
+#   docker compose up --build
+#   app: http://localhost:8501 · API: http://localhost:8000/docs
+#
+# O primeiro build baixa o MovieLens e treina o modelo (alguns minutos).
+x-image: &image
+  build: .
+  image: sistema-recomendacao-filmes:latest
+
+services:
+  app:
+    <<: *image
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  api:
+    <<: *image
+    command: ["uvicorn", "recommender.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped

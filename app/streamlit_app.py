@@ -33,11 +33,10 @@ def model_path() -> Path:
 
 
 def as_table(frame: pd.DataFrame, score: bool = True) -> pd.DataFrame:
-    """Formato de exibição: título legível, ano, gêneros e afinidade."""
+    """Formato de exibição: título legível (já inclui o ano), gêneros e afinidade."""
     table = pd.DataFrame(
         {
             "Filme": frame["Title"].map(catalog.display_title),
-            "Ano": frame["Title"].map(catalog.year_of),
             "Gêneros": frame["Genres"].str.replace("|", ", ", regex=False),
         }
     )
@@ -54,7 +53,8 @@ def show_list(frame: pd.DataFrame, score: bool = True) -> None:
         hide_index=True,
         width="stretch",
         column_config={
-            "Ano": st.column_config.NumberColumn(format="%d", width="small"),
+            "Filme": st.column_config.TextColumn(width="medium"),
+            "Gêneros": st.column_config.TextColumn(width="medium"),
             "Afinidade": st.column_config.ProgressColumn(
                 min_value=0.0, max_value=1.0, format="%.2f", help="Score do modelo, de 0 a 1"
             ),
@@ -81,7 +81,7 @@ def explain(rec: HybridRecommender, ratings: dict[int, float] | None = None) -> 
 # ----------------------------------------------------------------------
 # Página
 # ----------------------------------------------------------------------
-st.title("Recomendador de filmes")
+st.title("Recomendador de filmes", anchor=False)
 st.write(
     "Avalie filmes que você já viu e receba sugestões calculadas por um modelo treinado com "
     "1 milhão de avaliações do MovieLens (filmes lançados até 2000)."
@@ -104,27 +104,57 @@ mine, dataset, similar, about = st.tabs(
 )
 
 # ---------------- Usuário novo ----------------
+# Exemplo para quem abre o app pela primeira vez: gosta de animação e ficção científica,
+# não gosta de romance. MovieIDs do MovieLens 1M; se faltarem, usa os mais populares.
+EXAMPLE = {1: 5, 2355: 4, 260: 5, 2571: 4, 1721: 1}
+
+
+def use_example() -> None:
+    example = {m: r for m, r in EXAMPLE.items() if m in titles}
+    if len(example) < 3:
+        example = dict(zip(list(titles)[:5], [5, 5, 4, 2, 1], strict=False))
+    st.session_state["escolhidos"] = list(example)
+    for movie_id, rating in example.items():
+        st.session_state[f"nota-{movie_id}"] = rating - 1  # as estrelas guardam 0 a 4
+
+
 with mine:
     chosen = st.multiselect(
         "Filmes que você já viu",
         options=list(titles),
         format_func=titles.get,
+        key="escolhidos",
         placeholder="Digite parte do título, em inglês",
         help="Os filmes mais populares aparecem primeiro.",
     )
     if not chosen:
-        st.info("Escolha pelo menos um filme para começar. Filmes de que você não gostou também ajudam.")
+        st.info("Escolha alguns filmes e dê uma nota a cada um. Filmes de que você não gostou também ajudam.")
+        st.button("Usar um exemplo", on_click=use_example)
     else:
-        st.write("Dê uma nota de 1 a 5 para cada filme:")
-        ratings = {}
-        columns = st.columns(min(len(chosen), 3))
-        for i, movie_id in enumerate(chosen):
-            with columns[i % len(columns)]:
-                ratings[movie_id] = st.slider(titles[movie_id], 1, 5, 4, key=f"nota-{movie_id}")
-        n = st.slider("Quantos filmes recomendar", 5, 30, 10, key="n-novo")
-        if st.button("Recomendar filmes", type="primary"):
-            st.caption(explain(rec, ratings))
-            show_list(rec.recommend_for_ratings(ratings, n))
+        left, right = st.columns([5, 7], gap="large")
+        with left:
+            st.subheader("Suas notas", anchor=False)
+            ratings = {}
+            for movie_id in chosen:
+                title_column, stars_column = st.columns([3, 2], vertical_alignment="center")
+                title_column.write(titles[movie_id])
+                with stars_column:
+                    # Valor inicial pelo session_state (não por `default`), pois o exemplo também o define
+                    st.session_state.setdefault(f"nota-{movie_id}", 3)  # 4 estrelas
+                    stars = st.feedback("stars", key=f"nota-{movie_id}")
+                if stars is not None:
+                    ratings[movie_id] = stars + 1
+        with right:
+            header, size = st.columns([3, 1], vertical_alignment="bottom")
+            header.subheader("Recomendações", anchor=False)
+            n = size.selectbox(
+                "Quantos", [10, 20, 30], key="n-novo", format_func="{} filmes".format, label_visibility="collapsed"
+            )
+            if not ratings:
+                st.info("Dê uma nota a pelo menos um filme.")
+            else:
+                st.caption(explain(rec, ratings))
+                show_list(rec.recommend_for_ratings(ratings, n))
 
 # ---------------- Usuário do dataset ----------------
 with dataset:
@@ -135,6 +165,7 @@ with dataset:
         max_value=int(rec.user_ids.max()),
         value=int(rec.user_ids.min()),
         step=1,
+        width=200,
     )
     if user_id not in set(rec.user_ids.tolist()):
         st.warning(f"O usuário {user_id} não está no conjunto de treino.")
@@ -142,11 +173,11 @@ with dataset:
         left, right = st.columns(2)
         with left:
             history = rec.user_history(int(user_id))
-            st.subheader("Avaliou com as maiores notas")
+            st.subheader("Avaliou com as maiores notas", anchor=False)
             st.caption(f"{len(history)} filmes avaliados no total.")
             show_list(history.head(10), score=False)
         with right:
-            st.subheader("Recomendações")
+            st.subheader("Recomendações", anchor=False)
             st.caption(explain(rec))
             show_list(rec.recommend_for_user(int(user_id), 10))
 
@@ -155,6 +186,7 @@ with similar:
     st.write("Filmes com os gêneros mais parecidos. Entre os empatados, os mais populares vêm primeiro.")
     movie_id = st.selectbox(
         "Filme",
+        key="similar",
         options=list(titles),
         format_func=titles.get,
         index=None,
@@ -169,7 +201,7 @@ with similar:
 # ---------------- Sobre ----------------
 with about:
     config = rec.config
-    st.subheader("Como funciona")
+    st.subheader("Como funciona", anchor=False)
     st.write(
         f"Um modelo híbrido combina duas fontes. A primeira é uma fatoração de matrizes (SVD truncado com "
         f"{config.n_components} componentes), que encontra usuários com gosto parecido. A segunda compara os "
@@ -180,13 +212,25 @@ with about:
     if metrics_file.exists():
         metrics = json.loads(metrics_file.read_text(encoding="utf-8"))
         test = pd.DataFrame(metrics["test"]).set_index("Modelo")
-        st.subheader("Desempenho no teste")
+        st.subheader("Desempenho no teste", anchor=False)
         st.write(
             "Avaliação top-10 nas avaliações mais recentes de cada usuário, que o modelo nunca viu. "
             "Uma recomendação conta como acerto quando o usuário deu nota 4 ou 5 ao filme."
         )
-        st.dataframe(test.dropna(), width="stretch", column_config={"Modelo": "Modelo"})
-        st.caption(f"Fonte: `reports/metrics.json`, gerado em {metrics['generated_at']}.")
+        test = test.dropna().assign(Cobertura=lambda t: t["Cobertura"] * 100)
+        decimals = st.column_config.NumberColumn(format="%.4f")
+        st.dataframe(
+            test,
+            width="stretch",
+            column_config={
+                "Precision@10": decimals,
+                "Recall@10": decimals,
+                "NDCG@10": decimals,
+                "Cobertura": st.column_config.NumberColumn(format="%.1f%%", help="% do catálogo recomendado"),
+            },
+        )
+        generated = pd.Timestamp(metrics["generated_at"]).tz_convert("America/Sao_Paulo")
+        st.caption(f"Fonte: `reports/metrics.json`, gerado em {generated:%d/%m/%Y às %H:%M}.")
         figure = REPORTS_DIR / "figures" / "test_ndcg.png"
         if figure.exists():
             st.image(str(figure))

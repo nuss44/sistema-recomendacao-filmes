@@ -1,16 +1,23 @@
-# Mantém a imagem pequena: só entra o que a aplicação precisa para rodar.
+# Só entra na imagem o que a aplicação e o treino precisam.
 .git
-.gitignore
 .github/
+.gitignore
+.gitattributes
 .venv/
 venv/
-__pycache__/
+**/__pycache__/
 *.py[cod]
 .pytest_cache/
+.ruff_cache/
+.coverage
 .ipynb_checkpoints/
 notebooks/
 tests/
+docs/
 data/
 models/
+requirements-dev.txt
+compose.yaml
+Dockerfile
 *.md
 !README.md

@@ -8,3 +8,7 @@ textColor = "#22252b"
 
 [browser]
 gatherUsageStats = false
+
+[client]
+# Esconde o botão "Deploy" e o menu de desenvolvimento
+toolbarMode = "viewer"

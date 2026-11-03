@@ -13,4 +13,4 @@ __all__ = [
     "load_movielens",
     "temporal_split",
 ]
-__version__ = "0.5.0"
+__version__ = "0.6.0"

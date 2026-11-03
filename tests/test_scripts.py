@@ -150,3 +150,24 @@ def test_surprise_row_is_explained_when_the_package_is_missing(data_dir, tmp_pat
     metrics = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
     assert metrics["selection"]["surprise_params"] is None
     assert not (output / "figures").exists()
+
+
+def test_check_model_accepts_the_notebook_model_and_rejects_others(data_dir, tmp_path, monkeypatch, capsys):
+    """check_model.py compara o usuário 1 com o notebook; aqui, com dados sintéticos, a
+    referência é trocada pela saída do próprio modelo para testar os dois caminhos."""
+    train, check = load_script("train"), load_script("check_model")
+    model_path = tmp_path / "recommender.joblib"
+    train.main(["--data-dir", str(data_dir), "--output", str(model_path)])
+
+    # Dados sintéticos: não é o modelo do notebook
+    assert check.main(["--model", str(model_path)]) == 1
+    assert "não batem com o notebook" in capsys.readouterr().err
+
+    result = HybridRecommender.load(model_path).recommend_for_user(1, n=10)
+    monkeypatch.setattr(check, "EXPECTED_MOVIES", result["MovieID"].tolist())
+    monkeypatch.setattr(check, "EXPECTED_SCORES", result["Score"].tolist())
+    assert check.main(["--model", str(model_path)]) == 0
+
+    monkeypatch.setattr(check, "EXPECTED_SCORES", (result["Score"] + 0.01).tolist())
+    assert check.main(["--model", str(model_path)]) == 1  # mesma lista, scores diferentes
+    assert check.main(["--model", str(tmp_path / "nao-existe.joblib")]) == 1

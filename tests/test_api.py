@@ -29,6 +29,12 @@ def known(movies, ratings):
     return {"movie": int(movies["MovieID"].iloc[0]), "user": int(ratings["UserID"].iloc[0])}
 
 
+def test_root_opens_the_documentation(client):
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"] == "/docs"
+
+
 def test_health(client, movies):
     body = client.get("/health").json()
     assert body["status"] == "ok"

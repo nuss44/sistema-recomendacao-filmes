@@ -1,11 +1,14 @@
 # Integração contínua: roda a cada push e pull request.
 #
-# - lint:  estilo e erros comuns (ruff)
-# - tests: suíte completa em Linux e Windows, Python 3.10 e 3.12 (pacote, API, app e Surprise)
+# - lint:   estilo e erros comuns (ruff)
+# - tests:  suíte completa em Linux e Windows, Python 3.10 e 3.12 (pacote, API, app e Surprise),
+#           com as versões travadas em requirements-dev.txt
+# - docker: constrói a imagem com o MovieLens real (baixado do GroupLens a cada execução, nunca
+#           versionado), confere que o modelo é idêntico ao do notebook e testa app e API
 #
-# Os testes com o MovieLens real (tests/test_real_data.py) são pulados aqui: a licença
-# do dataset não permite redistribuí-lo. Já tests/test_metrics_report.py roda, pois só
-# lê o reports/metrics.json versionado e o confere contra as tabelas do notebook.
+# Os testes com dados reais (tests/test_real_data.py) são pulados no job tests; o job docker
+# cobre essa verificação. tests/test_metrics_report.py roda sempre: ele lê o
+# reports/metrics.json versionado e o confere contra as tabelas do notebook.
 name: CI
 
 on:
@@ -24,14 +27,14 @@ concurrency:
 jobs:
   lint:
     name: Lint (ruff)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: python -m pip install "ruff>=0.6"
+      - run: python -m pip install ruff -c requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
 
@@ -42,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
         python: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v5
@@ -50,10 +53,29 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Instalar o pacote com API, app, Surprise e dependências de teste
+          cache-dependency-path: requirements-dev.txt
+      - name: Instalar com as versões travadas
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,surprise,api,app]"
+          python -m pip install -e ".[dev,surprise,api,app]" -c requirements-dev.txt
       - name: Rodar os testes
         run: python -m pytest -v -rs --cov --cov-report=term-missing
+
+  docker:
+    name: Docker (dados reais e conferência do modelo)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Construir a imagem (baixa o MovieLens, treina e confere com o notebook)
+        run: docker compose build
+      - name: Subir app e API e esperar ficarem saudáveis
+        run: docker compose up --detach --wait --wait-timeout 120
+      - name: Testar app e API
+        run: |
+          curl --fail --silent --show-error http://localhost:8501/_stcore/health
+          curl --fail --silent --show-error http://localhost:8000/health
+          curl --fail --silent --show-error "http://localhost:8000/users/1/recommendations?n=3"
+      - name: Logs dos contêineres
+        if: always()
+        run: docker compose logs

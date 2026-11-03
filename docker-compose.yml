@@ -1,9 +1,0 @@
-services:
-  movie-recommender-api:
-    container_name: movie-recommender-api
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
-    restart: always

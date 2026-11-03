@@ -13,17 +13,32 @@ avaliação no teste.
 
 ## Como rodar
 
+### Com Docker (mais simples)
+
+```bash
+docker compose up --build
+```
+
+O primeiro build baixa o MovieLens 1M, treina o modelo e confere que ele é idêntico ao do
+notebook. Depois: app em http://localhost:8501 e API em http://localhost:8000/docs.
+
+### Com Python (3.10 ou mais recente)
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate              # Windows (Git Bash): source .venv/Scripts/activate
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev,surprise,api,app]"
+python -m pip install -e ".[dev,surprise,api,app]" -c requirements-dev.txt
 
 python scripts/download_data.py        # baixa e valida o MovieLens 1M
 python scripts/evaluate.py             # regenera reports/ (métricas e gráficos)
 python scripts/train.py                # treina o modelo final em models/
+python scripts/check_model.py          # confere que o modelo é igual ao do notebook
 python -m pytest                       # testes
 
 streamlit run app/streamlit_app.py     # interface: http://localhost:8501
 uvicorn recommender.api:app            # API: http://localhost:8000/docs
 ```
+
+`requirements.txt` (execução) e `requirements-dev.txt` (desenvolvimento) travam as versões
+testadas. Para atualizá-las: `pip install uv` e rode o comando do cabeçalho de cada arquivo.
