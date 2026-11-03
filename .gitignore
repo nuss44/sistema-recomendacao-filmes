@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------
+# Dados e artefatos (gerados por scripts, nunca versionados)
+# O MovieLens não permite redistribuição: baixe com
+#   python scripts/download_data.py
+# ---------------------------------------------------------------
+data/*
+!data/README.md
+models/
+
+# ---------------------------------------------------------------
+# Editores e sistema operacional
+# ---------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env

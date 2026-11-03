@@ -1,0 +1,16 @@
+# Mantém a imagem pequena: só entra o que a aplicação precisa para rodar.
+.git
+.gitignore
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+notebooks/
+tests/
+data/
+models/
+*.md
+!README.md
