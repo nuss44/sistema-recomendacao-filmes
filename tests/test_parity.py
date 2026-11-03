@@ -64,7 +64,9 @@ MODELS = {
 }
 
 
-@pytest.mark.parametrize("name", MODELS)
+@pytest.mark.parametrize(
+    "name", MODELS, ids=["aleatorio", "popularidade", "svd", "conteudo", "conteudo-ponderado", "hibrido-final"]
+)
 def test_scores_lists_and_metrics_are_identical(name, dev_data, item_features, notebook):
     mine_fn, theirs_fn = MODELS[name]
     mine = mine_fn(dev_data["R"], item_features)

@@ -1,0 +1,541 @@
+{
+  "generated_at": "2026-11-03T02:05:44+00:00",
+  "environment": {
+    "python": "3.10.0",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "recommender": "0.3.0",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.15.3",
+    "scikit-learn": "1.7.2",
+    "scikit-surprise": null
+  },
+  "data": {
+    "ratings": 1000209,
+    "users": 6040,
+    "movies": 3883,
+    "fingerprint": "fc8abd2acf4ff373"
+  },
+  "protocol": {
+    "split": "cronológico por usuário",
+    "test_frac": 0.2,
+    "val_frac": 0.2,
+    "k": 10,
+    "relevance_threshold": 4,
+    "train": 640166,
+    "validation": 160027,
+    "test": 200016
+  },
+  "selection": {
+    "config": {
+      "n_components": 20,
+      "content_weighted": true,
+      "alpha": 0.7,
+      "c": null
+    },
+    "matches_final_config": true,
+    "ndcg_validation_hybrid": 0.10725177760775916,
+    "ndcg_validation_svd": 0.10272675120645107,
+    "surprise_params": null,
+    "surprise_params_source": null
+  },
+  "test": [
+    {
+      "Modelo": "SVD sklearn (20 comp.)",
+      "Precision@10": 0.0992122024807241,
+      "Recall@10": 0.08471938685197129,
+      "NDCG@10": 0.12177836962432985,
+      "Cobertura": 0.177440123615761
+    },
+    {
+      "Modelo": "Híbrido final (config. da validação)",
+      "Precision@10": 0.09974857525980559,
+      "Recall@10": 0.08437919001829723,
+      "NDCG@10": 0.12130614040251125,
+      "Cobertura": 0.21890291012104043
+    },
+    {
+      "Modelo": "Popularidade",
+      "Precision@10": 0.0798524974857526,
+      "Recall@10": 0.04727182159451653,
+      "NDCG@10": 0.09070045401397038,
+      "Cobertura": 0.030131341746072623
+    },
+    {
+      "Modelo": "Híbrido inicial (α=0.5, sem normalizar)",
+      "Precision@10": 0.03813275226282266,
+      "Recall@10": 0.04003704028225645,
+      "NDCG@10": 0.051981515287440674,
+      "Cobertura": 0.4568632500643832
+    },
+    {
+      "Modelo": "Conteúdo (ponderado por nota)",
+      "Precision@10": 0.012185719074756953,
+      "Recall@10": 0.009430156723081406,
+      "NDCG@10": 0.014272052685067628,
+      "Cobertura": 0.9824877671903167
+    },
+    {
+      "Modelo": "Conteúdo (original)",
+      "Precision@10": 0.010576600737512572,
+      "Recall@10": 0.010575432058273578,
+      "NDCG@10": 0.012793291773189172,
+      "Cobertura": 0.851403553953129
+    },
+    {
+      "Modelo": "Aleatório",
+      "Precision@10": 0.005045256453234999,
+      "Recall@10": 0.002845471101464886,
+      "NDCG@10": 0.005425600516270103,
+      "Cobertura": 1.0
+    },
+    {
+      "Modelo": "SVD Surprise (nota prevista)",
+      "Precision@10": null,
+      "Recall@10": null,
+      "NDCG@10": null,
+      "Cobertura": null
+    }
+  ],
+  "validation": [
+    {
+      "Modelo": "Aleatório",
+      "Precision@10": 0.0037853297442799463,
+      "Recall@10": 0.0024574365717867333,
+      "NDCG@10": 0.004219199193372595,
+      "Cobertura": 1.0
+    },
+    {
+      "Modelo": "Popularidade",
+      "Precision@10": 0.06763122476446837,
+      "Recall@10": 0.0520012655699501,
+      "NDCG@10": 0.07963273104458636,
+      "Cobertura": 0.02523821787277878
+    },
+    {
+      "Modelo": "SVD sklearn (20 comp.)",
+      "Precision@10": 0.08014804845222072,
+      "Recall@10": 0.08818097505712079,
+      "NDCG@10": 0.10272675120645107,
+      "Cobertura": 0.1617306206541334
+    },
+    {
+      "Modelo": "SVD sklearn (50 comp.)",
+      "Precision@10": 0.07612718707940781,
+      "Recall@10": 0.09054885558236075,
+      "NDCG@10": 0.09837708059064512,
+      "Cobertura": 0.21632758176667524
+    },
+    {
+      "Modelo": "SVD sklearn (100 comp.)",
+      "Precision@10": 0.07136608344549127,
+      "Recall@10": 0.08914274755290935,
+      "NDCG@10": 0.09403831129164131,
+      "Cobertura": 0.2639711563224311
+    },
+    {
+      "Modelo": "SVD sklearn (150 comp.)",
+      "Precision@10": 0.06635262449528936,
+      "Recall@10": 0.0834688334243413,
+      "NDCG@10": 0.08834041541028437,
+      "Cobertura": 0.2933298995621942
+    },
+    {
+      "Modelo": "SVD sklearn (200 comp.)",
+      "Precision@10": 0.06149057873485868,
+      "Recall@10": 0.07829297643579221,
+      "NDCG@10": 0.08376726714795751,
+      "Cobertura": 0.3234612413082668
+    },
+    {
+      "Modelo": "Conteúdo (original)",
+      "Precision@10": 0.011002691790040377,
+      "Recall@10": 0.011944079480565105,
+      "NDCG@10": 0.014292052306968821,
+      "Cobertura": 0.8562966778264228
+    },
+    {
+      "Modelo": "Conteúdo (ponderado por nota)",
+      "Precision@10": 0.010683041722745626,
+      "Recall@10": 0.008422755035242122,
+      "NDCG@10": 0.012369480314640845,
+      "Cobertura": 0.9791398403296421
+    }
+  ],
+  "hybrid_search": [
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.011002691790040377,
+      "Recall@10": 0.011944079480565105,
+      "NDCG@10": 0.014292052306968821,
+      "Cobertura": 0.8562966778264228,
+      "tipo": "fixo",
+      "alpha": 0.0,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.03627187079407806,
+      "Recall@10": 0.041223092423348796,
+      "NDCG@10": 0.050026237536441254,
+      "Cobertura": 0.4097347411795004,
+      "tipo": "fixo",
+      "alpha": 0.1,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.0439771197846568,
+      "Recall@10": 0.051441276662232624,
+      "NDCG@10": 0.060909279166154386,
+      "Cobertura": 0.3942827710533093,
+      "tipo": "fixo",
+      "alpha": 0.2,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.05245625841184389,
+      "Recall@10": 0.06209462701255555,
+      "NDCG@10": 0.07207081504023244,
+      "Cobertura": 0.3705897501931496,
+      "tipo": "fixo",
+      "alpha": 0.3,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.05987550471063257,
+      "Recall@10": 0.07245153608684458,
+      "NDCG@10": 0.08154297329557135,
+      "Cobertura": 0.334020087561164,
+      "tipo": "fixo",
+      "alpha": 0.4,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.0675471063257066,
+      "Recall@10": 0.08215657917085763,
+      "NDCG@10": 0.09017895486015166,
+      "Cobertura": 0.27916559361318566,
+      "tipo": "fixo",
+      "alpha": 0.5,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.07266150740242261,
+      "Recall@10": 0.08773673685904002,
+      "NDCG@10": 0.09594598023280282,
+      "Cobertura": 0.23924800412052535,
+      "tipo": "fixo",
+      "alpha": 0.6,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.07661507402422611,
+      "Recall@10": 0.09146961860237336,
+      "NDCG@10": 0.10076602512632303,
+      "Cobertura": 0.20885912953901623,
+      "tipo": "fixo",
+      "alpha": 0.7,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.07881897711978465,
+      "Recall@10": 0.09139779581418768,
+      "NDCG@10": 0.10270668561772868,
+      "Cobertura": 0.1872263713623487,
+      "tipo": "fixo",
+      "alpha": 0.8,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.08021534320323015,
+      "Recall@10": 0.0898184816940697,
+      "NDCG@10": 0.10311805004192437,
+      "Cobertura": 0.17203193407159412,
+      "tipo": "fixo",
+      "alpha": 0.9,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.08014804845222072,
+      "Recall@10": 0.08818097505712079,
+      "NDCG@10": 0.10272675120645107,
+      "Cobertura": 0.1617306206541334,
+      "tipo": "fixo",
+      "alpha": 1.0,
+      "c": null,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.08157806191117092,
+      "Recall@10": 0.09159985034504917,
+      "NDCG@10": 0.10486791347930449,
+      "Cobertura": 0.16894154004635592,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 5.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.08110699865410498,
+      "Recall@10": 0.09190629318011681,
+      "NDCG@10": 0.10445163620955941,
+      "Cobertura": 0.18181818181818182,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 10.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.08041722745625841,
+      "Recall@10": 0.09054528623942451,
+      "NDCG@10": 0.10313197939509175,
+      "Cobertura": 0.20190574298223024,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 15.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.07750672947510094,
+      "Recall@10": 0.08440733628794186,
+      "NDCG@10": 0.09914067719010422,
+      "Cobertura": 0.2413082668040175,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 25.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.07065948855989233,
+      "Recall@10": 0.0707770368890378,
+      "NDCG@10": 0.08990461604515398,
+      "Cobertura": 0.30234354880247233,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 50.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo original",
+      "Precision@10": 0.0620121130551817,
+      "Recall@10": 0.05847610831122211,
+      "NDCG@10": 0.07862188126811973,
+      "Cobertura": 0.3461241308266804,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 100.0,
+      "ponderado": false
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.010683041722745626,
+      "Recall@10": 0.008422755035242122,
+      "NDCG@10": 0.012369480314640845,
+      "Cobertura": 0.9791398403296421,
+      "tipo": "fixo",
+      "alpha": 0.0,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.04247981157469717,
+      "Recall@10": 0.036286803681855544,
+      "NDCG@10": 0.05428641036734853,
+      "Cobertura": 0.5263971156322431,
+      "tipo": "fixo",
+      "alpha": 0.1,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.05195154777927321,
+      "Recall@10": 0.04731530224596196,
+      "NDCG@10": 0.06739870133634264,
+      "Cobertura": 0.5027040947720834,
+      "tipo": "fixo",
+      "alpha": 0.2,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.06159152086137282,
+      "Recall@10": 0.05973769141623286,
+      "NDCG@10": 0.07989639927968234,
+      "Cobertura": 0.4694823590007726,
+      "tipo": "fixo",
+      "alpha": 0.3,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.07072678331090175,
+      "Recall@10": 0.07283569841053189,
+      "NDCG@10": 0.09093784157646788,
+      "Cobertura": 0.4112799381921195,
+      "tipo": "fixo",
+      "alpha": 0.4,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.07871803499327053,
+      "Recall@10": 0.08239734458704699,
+      "NDCG@10": 0.09982740552718443,
+      "Cobertura": 0.3232037084728303,
+      "tipo": "fixo",
+      "alpha": 0.5,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08294078061911171,
+      "Recall@10": 0.08906175399028744,
+      "NDCG@10": 0.10515754065131472,
+      "Cobertura": 0.24774658768993046,
+      "tipo": "fixo",
+      "alpha": 0.6,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08435397039030955,
+      "Recall@10": 0.09185874006395506,
+      "NDCG@10": 0.10725177760775916,
+      "Cobertura": 0.2070563996909606,
+      "tipo": "fixo",
+      "alpha": 0.7,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.0832436069986541,
+      "Recall@10": 0.0915008458676466,
+      "NDCG@10": 0.10618147900347168,
+      "Cobertura": 0.1800154519701262,
+      "tipo": "fixo",
+      "alpha": 0.8,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08265477792732168,
+      "Recall@10": 0.09083545929576117,
+      "NDCG@10": 0.10538155739936726,
+      "Cobertura": 0.1684264743754829,
+      "tipo": "fixo",
+      "alpha": 0.9,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08014804845222072,
+      "Recall@10": 0.08818097505712079,
+      "NDCG@10": 0.10272675120645107,
+      "Cobertura": 0.1617306206541334,
+      "tipo": "fixo",
+      "alpha": 1.0,
+      "c": null,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08184724091520862,
+      "Recall@10": 0.09065363054217226,
+      "NDCG@10": 0.10456364780752271,
+      "Cobertura": 0.16765387586917332,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 5.0,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.0819313593539704,
+      "Recall@10": 0.09072877273557266,
+      "NDCG@10": 0.1044624378376474,
+      "Cobertura": 0.18207571465361833,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 10.0,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.08095558546433379,
+      "Recall@10": 0.08650308657323419,
+      "NDCG@10": 0.10247946624812672,
+      "Cobertura": 0.21503991758949267,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 15.0,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.07907133243606998,
+      "Recall@10": 0.08022991725585639,
+      "NDCG@10": 0.09890293515063663,
+      "Cobertura": 0.28611898016997167,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 25.0,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.07483176312247646,
+      "Recall@10": 0.0685911094972694,
+      "NDCG@10": 0.09173121561749518,
+      "Cobertura": 0.39479783672418234,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 50.0,
+      "ponderado": true
+    },
+    {
+      "Modelo": "Conteúdo ponderado por nota",
+      "Precision@10": 0.06880888290713325,
+      "Recall@10": 0.056930129832350115,
+      "NDCG@10": 0.0835197648378316,
+      "Cobertura": 0.45377285603914497,
+      "tipo": "adaptativo",
+      "alpha": null,
+      "c": 100.0,
+      "ponderado": true
+    }
+  ]
+}

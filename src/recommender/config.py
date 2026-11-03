@@ -11,6 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data" / "processed"
 MODELS_DIR = ROOT / "models"
+REPORTS_DIR = ROOT / "reports"
+MODEL_PATH = MODELS_DIR / "recommender.joblib"
 
 RANDOM_STATE = 42
 

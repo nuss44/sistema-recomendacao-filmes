@@ -9,6 +9,7 @@ import notebook_reference  # noqa: E402
 from synthetic import make_movielens  # noqa: E402
 
 from recommender import HybridRecommender, Index, temporal_split  # noqa: E402
+from recommender.evaluation import top_k  # noqa: E402
 from recommender.models import genre_features  # noqa: E402
 
 # Configuração final do notebook, no formato que as funções dele esperam.
@@ -32,8 +33,9 @@ def ratings(dataset):
 
 @pytest.fixture(scope="session")
 def notebook(movies, ratings):
-    """Namespace do notebook executado com os dados sintéticos."""
-    return notebook_reference.load(movies, ratings)
+    """Namespace do notebook executado com os dados sintéticos, usando a mesma regra
+    de desempate do pacote (veja `recommender.evaluation.top_k`)."""
+    return notebook_reference.load(movies, ratings, top_k=top_k)
 
 
 @pytest.fixture(scope="session")

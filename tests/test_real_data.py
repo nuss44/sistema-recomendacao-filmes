@@ -9,10 +9,11 @@ import numpy as np
 import pytest
 
 import notebook_reference
-from recommender import FINAL_CONFIG, HybridRecommender, Index, load_movielens, temporal_split
+from recommender import FINAL_CONFIG, HybridConfig, HybridRecommender, Index, load_movielens, temporal_split
 from recommender import evaluation as ev
 from recommender import models
-from recommender.config import DATA_DIR
+from recommender.config import DATA_DIR, REPORTS_DIR
+from recommender.experiment import evaluate_on_test
 
 pytestmark = pytest.mark.skipif(
     not (DATA_DIR / "ratings.csv").exists(),
@@ -46,7 +47,7 @@ def test_production_recommendations_for_user_1_match_notebook(real):
 def test_hybrid_and_recommender_match_notebook_on_real_data(real):
     """Mesma verificação do notebook (0 divergências), agora contra o código do pacote."""
     movies, ratings, split = real
-    notebook = notebook_reference.load(movies, ratings)
+    notebook = notebook_reference.load(movies, ratings, top_k=ev.top_k)
     config = {"n_components": 20, "conteudo_ponderado": True, "alpha": 0.7, "c": None}
 
     index = Index.from_data(ratings, movies)
@@ -65,3 +66,23 @@ def test_hybrid_and_recommender_match_notebook_on_real_data(real):
         for uid in index.user_ids
     )
     assert divergences == 0
+
+
+@pytest.mark.skipif(not (REPORTS_DIR / "metrics.json").exists(), reason="rode scripts/evaluate.py")
+def test_metrics_report_is_up_to_date(real):
+    """O metrics.json versionado corresponde ao código e aos dados atuais.
+
+    Recalcula a tabela de teste (sem o Surprise, que é opcional) e compara com o
+    relatório. Cobre as linhas de conteúdo, que não podem ser comparadas ao notebook.
+    """
+    import json
+
+    movies, ratings, split = real
+    report = json.loads((REPORTS_DIR / "metrics.json").read_text(encoding="utf-8"))
+    index = Index.from_data(ratings, movies)
+    config = HybridConfig(**report["selection"]["config"])  # a configuração com que o relatório foi gerado
+    fresh = evaluate_on_test(split, index, models.genre_features(movies), config, surprise_params=None)
+    reported = {row["Modelo"]: row for row in report["test"]}
+    for _, row in fresh.dropna(subset=["NDCG@10"]).iterrows():
+        for column in ("Precision@10", "Recall@10", "NDCG@10", "Cobertura"):
+            assert reported[row["Modelo"]][column] == pytest.approx(row[column], abs=1e-12), (row["Modelo"], column)

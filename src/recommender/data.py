@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +26,15 @@ def load_movielens(data_dir: Path | str = DATA_DIR) -> tuple[pd.DataFrame, pd.Da
     ratings = pd.read_csv(data_dir / "ratings.csv")
     movies["Genres"] = movies["Genres"].fillna("")
     return movies, ratings
+
+
+def fingerprint(ratings: pd.DataFrame) -> str:
+    """Impressão digital das avaliações (independe do sistema operacional e do CSV).
+
+    Permite verificar que métricas e modelo foram gerados com os mesmos dados.
+    """
+    values = ratings[["UserID", "MovieID", "Rating", "Timestamp"]].to_numpy(dtype=np.int64)
+    return hashlib.sha256(np.ascontiguousarray(values).tobytes()).hexdigest()[:16]
 
 
 # ----------------------------------------------------------------------

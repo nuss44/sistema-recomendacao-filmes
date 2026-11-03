@@ -84,7 +84,7 @@ class HybridRecommender:
         u = self.index.user_pos[user_id]
         R_row = self.R[u : u + 1]
         collaborative = (self.user_factors[u : u + 1] @ self.svd.components_).astype(np.float32)
-        return self._recommend(R_row, collaborative, n)
+        return self._recommend(R_row, collaborative, n, row_id=int(u))
 
     def recommend_for_ratings(self, ratings: dict[int, float], n: int = 10) -> pd.DataFrame:
         """Top-n para um usuário novo, a partir das notas que ele deu (MovieID -> nota 1–5).
@@ -94,7 +94,8 @@ class HybridRecommender:
         """
         R_row = self._ratings_row(ratings)
         collaborative = (self.svd.transform(R_row) @ self.svd.components_).astype(np.float32)
-        return self._recommend(R_row, collaborative, n)
+        # Usuários novos usam um sorteio de desempate próprio (fora da faixa do dataset)
+        return self._recommend(R_row, collaborative, n, row_id=self.index.n_users)
 
     def similar_movies(self, movie_id: int, n: int = 10) -> pd.DataFrame:
         """Filmes com gêneros mais parecidos (cosseno do TF-IDF).
@@ -113,13 +114,13 @@ class HybridRecommender:
     # ------------------------------------------------------------------
     # Internos
     # ------------------------------------------------------------------
-    def _recommend(self, R_row: csr_matrix, collaborative: np.ndarray, n: int) -> pd.DataFrame:
+    def _recommend(self, R_row: csr_matrix, collaborative: np.ndarray, n: int, row_id: int) -> pd.DataFrame:
         n = self._check_n(n, R_row)
         seen = R_row.toarray() > 0
         weights = content_weights(R_row, self.config.content_weighted)
         content = np.asarray((np.asarray(weights @ self.item_features)) @ self.item_features.T, dtype=np.float32)
         scores = combine(collaborative, content, R_row, seen, alpha=self.config.alpha, c=self.config.c)
-        top = top_k(scores, seen, k=n)[0]
+        top = top_k(scores, seen, k=n, row_ids=np.array([row_id]))[0]
         result = self.movies.iloc[top][["MovieID", "Title", "Genres"]].copy()
         result["Score"] = scores[0, top]
         return result.reset_index(drop=True)

@@ -1,0 +1,62 @@
+"""Treina o recomendador final com todas as avaliações e salva em models/.
+
+Uso (a partir da raiz do projeto, depois de `python scripts/download_data.py`):
+    python scripts/train.py
+
+Saída:
+    models/recommender.joblib   o modelo que a API e o Streamlit carregam
+    models/metadata.json        configuração, dados e versões usados no treino
+
+A configuração é FINAL_CONFIG, a mesma escolhida na validação e avaliada no teste
+(confira com `python scripts/evaluate.py`).
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import time
+from dataclasses import asdict
+from datetime import datetime, timezone
+
+from recommender import FINAL_CONFIG, HybridRecommender, load_movielens
+from recommender.config import MODEL_PATH
+from recommender.data import fingerprint
+from recommender.reports import environment
+
+
+def main() -> int:
+    movies, ratings = load_movielens()
+    count = f"{len(ratings):,}".replace(",", ".")
+    print(f"[..] Treinando com {count} avaliações e {FINAL_CONFIG}")
+    start = time.perf_counter()
+    recommender = HybridRecommender.fit(ratings, movies, FINAL_CONFIG)
+    seconds = time.perf_counter() - start
+
+    recommender.save(MODEL_PATH)
+    metadata = {
+        "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "config": asdict(FINAL_CONFIG),
+        "data": {
+            "ratings": len(ratings),
+            "users": recommender.index.n_users,
+            "movies": recommender.index.n_items,
+            "fingerprint": fingerprint(ratings),
+        },
+        "training_seconds": round(seconds, 2),
+        "environment": environment(),
+    }
+    metadata_path = MODEL_PATH.with_name("metadata.json")
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    size_mb = MODEL_PATH.stat().st_size / 1e6
+    print(f"[ok] {MODEL_PATH.parent.name}/{MODEL_PATH.name} ({size_mb:.1f} MB) e {metadata_path.name} "
+          f"em {seconds:.1f}s")
+
+    print("\nExemplo — recomendações para o usuário 1:")
+    print(recommender.recommend_for_user(1, n=5).to_string(index=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

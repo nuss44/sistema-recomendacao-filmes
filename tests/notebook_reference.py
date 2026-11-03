@@ -33,10 +33,65 @@ CELLS['modelos'] = '# ----------------------------------------------------------
 CELLS['recomendador final'] = 'def criar_recomendador(df, config):\n    """Ajusta o híbrido em `df` e devolve uma função recomendar(user_id, n)."""\n    R = matriz(df)\n    vistos = vistos_de(R)\n    scores = score_hibrido(R, config)\n\n    def recomendar(user_id, n=10):\n        if user_id not in u_idx.index:\n            return f"UserID {user_id} não encontrado."\n        u = u_idx[user_id]\n        # mesma rotina de top-K da avaliação (já exclui os filmes vistos)\n        top = top_k(scores[u:u + 1], vistos[u:u + 1], k=n)[0]\n        rec = movies.iloc[top][[\'MovieID\', \'Title\', \'Genres\']].copy()\n        rec[\'Score\'] = scores[u, top]\n        return rec.reset_index(drop=True)\n\n    return recomendar'
 
 
-def load(movies: pd.DataFrame, ratings: pd.DataFrame) -> dict:
+# Protocolo de avaliação (executado por `run_protocol`, não por `load`)
+PROTOCOL_CELLS: dict[str, str] = {}
+
+# Célula 21 — tuning do Surprise
+PROTOCOL_CELLS['tuning do Surprise'] = 'from itertools import product\nfrom joblib import Parallel, delayed\nfrom surprise import Dataset, Reader, SVD, accuracy\n\nreader = Reader(rating_scale=(1, 5))\n\n# Ajuste SÓ no treino e escolha pelo RMSE na validação (o teste não participa)\ntrainset_tr = Dataset.load_from_df(train_df[[\'UserID\', \'MovieID\', \'Rating\']], reader).build_full_trainset()\nvalidacao_surprise = list(val_df[[\'UserID\', \'MovieID\', \'Rating\']].itertuples(index=False, name=None))\n\nparam_grid = {\n    \'n_factors\': [50, 100, 150],\n    \'lr_all\': [0.002, 0.005, 0.01],\n    \'reg_all\': [0.02, 0.05, 0.1],\n    \'n_epochs\': [20, 50, 70]\n}\ncombinacoes = [dict(zip(param_grid, v)) for v in product(*param_grid.values())]\n\ndef rmse_validacao(params):\n    modelo = SVD(**params, random_state=42)\n    modelo.fit(trainset_tr)\n    return accuracy.rmse(modelo.test(validacao_surprise), verbose=False)\n\nrmses = Parallel(n_jobs=-1)(delayed(rmse_validacao)(p) for p in combinacoes)\nbusca_surprise = pd.DataFrame(combinacoes).assign(**{\'RMSE validação\': rmses}) \\\n                   .sort_values(\'RMSE validação\').reset_index(drop=True)\nmelhores_params = {k: (int(v) if k in (\'n_factors\', \'n_epochs\') else float(v))\n                   for k, v in busca_surprise.iloc[0].drop(\'RMSE validação\').items()}\n\nprint(f"Melhores parâmetros (validação): {melhores_params}")\nprint(f"RMSE na validação: {busca_surprise[\'RMSE validação\'].iloc[0]:.4f}")'
+
+# Célula 47 — fase de validação
+PROTOCOL_CELLS['fase de validação'] = '# ------------------------------------------------------------\n# FASE DE VALIDAÇÃO — ajuste no treino, comparação na validação\n# ------------------------------------------------------------\nR_tr = matriz(train_df)\nvistos_tr = vistos_de(R_tr)\nrel_val = relevantes_de(val_df)\nprint(f"Usuários com ao menos 1 filme relevante na validação: {len(rel_val):,}")\n\nvalidacao = [\n    avaliar(score_aleatorio(R_tr), \'Aleatório\', vistos_tr, rel_val),\n    avaliar(score_popularidade(R_tr), \'Popularidade\', vistos_tr, rel_val),\n]\n\n# Número de componentes do SVD sklearn, escolhido pela métrica de ranking\ncolab_val = {}\nfor k_comp in [20, 50, 100, 150, 200]:\n    colab_val[k_comp] = score_svd_sklearn(R_tr, k_comp)\n    validacao.append(avaliar(colab_val[k_comp], f\'SVD sklearn ({k_comp} comp.)\', vistos_tr, rel_val))\n\n# Variantes de conteúdo\nconteudo_val = {p: score_conteudo(R_tr, ponderado=p) for p in (False, True)}\nvalidacao.append(avaliar(conteudo_val[False], \'Conteúdo (original)\', vistos_tr, rel_val))\nvalidacao.append(avaliar(conteudo_val[True], \'Conteúdo (ponderado por nota)\', vistos_tr, rel_val))\n\ntabela_val = pd.DataFrame(validacao)\nsvd_val = tabela_val[tabela_val[\'Modelo\'].str.startswith(\'SVD sklearn\')]\nn_comp_top = int(svd_val.loc[svd_val[f\'NDCG@{K}\'].idxmax(), \'Modelo\'].split(\'(\')[1].split()[0])\nprint(f"Componentes escolhidos para o SVD sklearn (NDCG@{K} na validação): {n_comp_top}")\ntabela_val.round(4)'
+
+# Célula 49 — híbrido na validação
+PROTOCOL_CELLS['híbrido na validação'] = '# ------------------------------------------------------------\n# Híbrido na validação: α fixo de 0 a 1 e α adaptativo com várias constantes c\n# ------------------------------------------------------------\nimport matplotlib.pyplot as plt\n\ncolab = colab_val[n_comp_top]\nnomes_conteudo = {False: \'Conteúdo original\', True: \'Conteúdo ponderado por nota\'}\n\nbusca_hibrido = []\nfor ponderado, nome in nomes_conteudo.items():\n    for a in np.round(np.arange(0, 1.01, 0.1), 1):\n        r = avaliar(combinar(colab, conteudo_val[ponderado], R_tr, vistos_tr, alpha=a),\n                    nome, vistos_tr, rel_val)\n        busca_hibrido.append({**r, \'tipo\': \'fixo\', \'alpha\': a, \'c\': None, \'ponderado\': ponderado})\n    for c in [5, 10, 15, 25, 50, 100]:\n        r = avaliar(combinar(colab, conteudo_val[ponderado], R_tr, vistos_tr, c=c),\n                    nome, vistos_tr, rel_val)\n        busca_hibrido.append({**r, \'tipo\': \'adaptativo\', \'alpha\': None, \'c\': c, \'ponderado\': ponderado})\nbusca_hibrido = pd.DataFrame(busca_hibrido)\n\n# Gráfico: α fixo na validação\nAZUL, LARANJA, CINZA, TEXTO, EIXO = \'#2a78d6\', \'#eb6834\', \'#b4b2a9\', \'#52514e\', \'#c3c2b7\'\nfig, ax = plt.subplots(figsize=(9, 4.5))\nresumo = []\nfor ponderado, cor in [(False, AZUL), (True, LARANJA)]:\n    d = busca_hibrido[(busca_hibrido[\'tipo\'] == \'fixo\') & (busca_hibrido[\'ponderado\'] == ponderado)]\n    ax.plot(d[\'alpha\'], d[f\'NDCG@{K}\'], color=cor, linewidth=2, marker=\'o\', markersize=5,\n            label=nomes_conteudo[ponderado])\n    melhor = d.loc[d[f\'NDCG@{K}\'].idxmax()]\n    ax.plot(melhor[\'alpha\'], melhor[f\'NDCG@{K}\'], \'o\', markersize=12,\n            markerfacecolor=\'none\', markeredgecolor=cor, markeredgewidth=2)\n    resumo.append(f"{nomes_conteudo[ponderado]}: melhor α = {melhor[\'alpha\']:.1f} "\n                  f"(NDCG {melhor[f\'NDCG@{K}\']:.3f})")\npop_val = tabela_val.loc[tabela_val[\'Modelo\'] == \'Popularidade\', f\'NDCG@{K}\'].item()\nax.axhline(pop_val, color=TEXTO, linestyle=\'--\', linewidth=1)\nax.text(0.01, pop_val + 0.002, \'baseline popularidade\', fontsize=9, color=TEXTO)\nax.text(0.15, 0.08, \'\\n\'.join(resumo), transform=ax.transAxes, fontsize=9, color=TEXTO)\nax.set_title(f\'Validação: NDCG@{K} do híbrido conforme o peso α do colaborativo\',\n             loc=\'left\', fontsize=11, color=TEXTO)\nax.set_xlabel(\'α  (0 = só conteúdo · 1 = só colaborativo)\', color=TEXTO)\nax.set_ylabel(f\'NDCG@{K}\', color=TEXTO)\nax.set_xticks(np.round(np.arange(0, 1.01, 0.1), 1))\nfor lado in [\'top\', \'right\']:\n    ax.spines[lado].set_visible(False)\nfor lado in [\'left\', \'bottom\']:\n    ax.spines[lado].set_color(EIXO)\nax.tick_params(colors=TEXTO)\nax.grid(axis=\'y\', color=\'#e1e0d9\', linewidth=0.8)\nax.legend(frameon=False, loc=\'center right\')\nplt.tight_layout()\nplt.show()\n\n# α adaptativo: NDCG por constante c\nbusca_hibrido[busca_hibrido[\'tipo\'] == \'adaptativo\'] \\\n    .pivot(index=\'c\', columns=\'Modelo\', values=f\'NDCG@{K}\').round(4)'
+
+# Célula 51 — configuração escolhida
+PROTOCOL_CELLS['configuração escolhida'] = '# ------------------------------------------------------------\n# Escolha da configuração final — feita SÓ com a validação\n# ------------------------------------------------------------\nmelhor = busca_hibrido.loc[busca_hibrido[f\'NDCG@{K}\'].idxmax()]\nconfig_final = {\n    \'n_components\': n_comp_top,\n    \'conteudo_ponderado\': bool(melhor[\'ponderado\']),\n    \'alpha\': None if melhor[\'tipo\'] == \'adaptativo\' else float(melhor[\'alpha\']),\n    \'c\': None if melhor[\'tipo\'] == \'fixo\' else int(melhor[\'c\']),\n}\nndcg_val_escolhido = melhor[f\'NDCG@{K}\']\nndcg_val_svd = svd_val[f\'NDCG@{K}\'].max()\n\nprint("Configuração escolhida na validação:")\nfor chave, valor in config_final.items():\n    print(f"  {chave:<20} {valor}")\nprint(f"\\nNDCG@{K} na validação: híbrido {ndcg_val_escolhido:.4f} | SVD sklearn sozinho {ndcg_val_svd:.4f}")'
+
+# Célula 53 — fase de teste
+PROTOCOL_CELLS['fase de teste'] = '# ------------------------------------------------------------\n# FASE DE TESTE — re-treino no desenvolvimento (treino + validação),\n# avaliação ÚNICA no teste. Nenhuma escolha é feita aqui.\n# ------------------------------------------------------------\nR_dev = matriz(dev_df)\nvistos_dev = vistos_de(R_dev)\nrel_teste = relevantes_de(test_df)\nprint(f"Usuários com ao menos 1 filme relevante no teste: {len(rel_teste):,}")\n\ncolab_dev_100 = score_svd_sklearn(R_dev, 100)\nconteudo_dev_original = score_conteudo(R_dev, ponderado=False)\nscores_hibrido_teste = score_hibrido(R_dev, config_final)\n\nteste = [\n    avaliar(score_aleatorio(R_dev), \'Aleatório\', vistos_dev, rel_teste),\n    avaliar(score_popularidade(R_dev), \'Popularidade\', vistos_dev, rel_teste),\n    avaliar(score_svd_sklearn(R_dev, n_comp_top), f\'SVD sklearn ({n_comp_top} comp.)\', vistos_dev, rel_teste),\n    avaliar(score_surprise(dev_df, melhores_params), \'SVD Surprise (nota prevista)\', vistos_dev, rel_teste),\n    avaliar(conteudo_dev_original, \'Conteúdo (original)\', vistos_dev, rel_teste),\n    avaliar(score_conteudo(R_dev, ponderado=True), \'Conteúdo (ponderado por nota)\', vistos_dev, rel_teste),\n    # Versão inicial do notebook, para referência: 100 comp., conteúdo original, sem normalizar\n    avaliar(combinar(colab_dev_100, conteudo_dev_original, R_dev, vistos_dev, alpha=0.5, normalizar=False),\n            \'Híbrido inicial (α=0.5, sem normalizar)\', vistos_dev, rel_teste),\n    avaliar(scores_hibrido_teste, \'Híbrido final (config. da validação)\', vistos_dev, rel_teste),\n]\ntabela_teste = pd.DataFrame(teste).sort_values(f\'NDCG@{K}\', ascending=False).reset_index(drop=True)\n\ndados = tabela_teste.sort_values(f\'NDCG@{K}\')\ncores = [CINZA if m in (\'Aleatório\', \'Popularidade\') else AZUL for m in dados[\'Modelo\']]\nfig, ax = plt.subplots(figsize=(9, 5))\nbarras = ax.barh(dados[\'Modelo\'], dados[f\'NDCG@{K}\'], color=cores, height=0.6)\nax.axvline(tabela_teste.loc[tabela_teste[\'Modelo\'] == \'Popularidade\', f\'NDCG@{K}\'].item(),\n           color=TEXTO, linestyle=\'--\', linewidth=1)\nfor b in barras:\n    ax.text(b.get_width() + 0.002, b.get_y() + b.get_height() / 2,\n            f\'{b.get_width():.3f}\', va=\'center\', fontsize=9, color=TEXTO)\nax.set_title(f\'Teste: NDCG@{K} por modelo (cinza = baseline; tracejado = popularidade)\',\n             loc=\'left\', fontsize=11, color=TEXTO)\nax.set_xlabel(f\'NDCG@{K} (maior é melhor)\', color=TEXTO)\nfor lado in [\'top\', \'right\']:\n    ax.spines[lado].set_visible(False)\nfor lado in [\'left\', \'bottom\']:\n    ax.spines[lado].set_color(EIXO)\nax.tick_params(colors=TEXTO)\nax.grid(axis=\'x\', color=\'#e1e0d9\', linewidth=0.8)\nax.set_axisbelow(True)\nplt.tight_layout()\nplt.show()\n\ntabela_teste.round(4)'
+
+
+def load(movies: pd.DataFrame, ratings: pd.DataFrame, top_k=None) -> dict:
     """Executa as células com `movies` e `ratings` e devolve o namespace resultante,
-    como se o notebook tivesse sido rodado até o fim com esses dados."""
+    como se o notebook tivesse sido rodado até o fim com esses dados.
+
+    `top_k` substitui a função de ranking do notebook (a original fica em
+    `top_k_original`). O pacote desempata scores iguais pela ordem do catálogo; o
+    notebook desempata de forma arbitrária, que muda com o NumPy e o processador.
+    Com a mesma regra de desempate, todo o resto pode ser comparado bit a bit.
+    """
     namespace = {"movies": movies.copy(), "ratings": ratings.copy(), "np": np, "pd": pd}
     for code in CELLS.values():
         exec(textwrap.dedent(code), namespace)
+    namespace["top_k_original"] = namespace["top_k"]
+    if top_k is not None:
+        namespace["top_k"] = top_k  # avaliar() e criar_recomendador() leem esta global
+    return namespace
+
+
+def run_protocol(namespace: dict, surprise_params: dict | None = None, tune_surprise: bool = False) -> dict:
+    """Roda as células de validação e teste sobre o namespace de `load`.
+
+    Os gráficos das células são desenhados num backend sem janela e descartados.
+    `surprise_params` substitui o resultado da busca do Surprise (81 combinações,
+    lenta); com `tune_surprise=True`, a célula de busca roda de verdade.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    namespace.setdefault("plt", plt)
+    show, plt.show = plt.show, lambda *args, **kwargs: None  # sem janela para mostrar
+    try:
+        for desc, code in PROTOCOL_CELLS.items():
+            if desc == "tuning do Surprise":
+                if not tune_surprise:
+                    namespace["melhores_params"] = surprise_params
+                    continue
+            exec(textwrap.dedent(code), namespace)
+            plt.close("all")
+    finally:
+        plt.show = show
     return namespace
